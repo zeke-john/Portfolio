@@ -46,7 +46,7 @@ function App() {
               <div className="space-y-2.5">
                 <p className="text-lg text-muted-foreground leading-relaxed text-left">
                   i'm 17 and am a full time software engineer, i love building
-                  and creating new things
+                  and creating new things.
                 </p>
                 <div className="flex flex-col items-left gap-3 text-md text-muted-foreground">
                   <span className="flex items-center gap-2.5">
@@ -85,7 +85,7 @@ function App() {
               href="https://mediscan.ai"
               icon="/mediscan.svg"
               iconBgColor="#799ED9"
-              iconZoom={125}
+              iconZoom={122}
               title="MediScan AI"
               linkText="mediscan.ai"
               description="An AI-powered medical legal record analysis platform for physicians, doctors, and lawyers. We generate accurate medical record summaries & chronologies, and do automatic in-depth case review."
@@ -94,7 +94,7 @@ function App() {
               href="https://www.figma.com/community/plugin/1566412604365451941/buddaai-ai-design-partner"
               icon="/budda.png"
               iconBgColor="#9B88B8"
-              iconZoom={145}
+              iconZoom={150}
               title="Budda AI"
               linkText="figma.com/BuddaAI"
               description="An AI Design Partner for Figma. Lets you create and modify your designs agentically, pulling context from your other designs and using your exact style."
@@ -103,7 +103,7 @@ function App() {
               href="https://sumanyai.com"
               icon="/sumany.png"
               iconBgColor="#415873"
-              iconZoom={110}
+              iconZoom={115}
               title="Sumany AI"
               linkText="sumanyai.com"
               description="Built in 2022, A serverless SAAS platform that summarizes long documents and text using open source transformer models that I quantized for performance. One of the first projects I launched & got paying customers for."

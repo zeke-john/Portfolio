@@ -45,8 +45,8 @@ function App() {
               </h1>
               <div className="space-y-2.5">
                 <p className="text-lg text-muted-foreground leading-relaxed text-left">
-                  i'm 17 and am a full time software engineer, i love building
-                  and creating new things.
+                  i'm 17 and a full stack software engineer, i love building and
+                  creating new things.
                 </p>
                 <div className="flex flex-col items-left gap-3 text-md text-muted-foreground">
                   <span className="flex items-center gap-2.5">

@@ -14,6 +14,7 @@ import {
   MapPin,
   Building,
   ExternalLink,
+  Twitter,
 } from "lucide-react";
 
 interface TiltState {
@@ -35,8 +36,9 @@ function App() {
   return (
     <main className="min-h-screen bg-background flex flex-col">
       <div className="flex-1 flex items-center justify-center p-6 md:p-12">
-        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-32">
-          <div className="flex flex-col justify-center space-y-6">
+        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+          {/* Left column */}
+          <div className="flex flex-col space-y-6">
             <HeaderTiltCard />
 
             <div className="space-y-4 text-left">
@@ -44,9 +46,9 @@ function App() {
                 <span className="wave-emoji">👋</span> hey! i'm zeke
               </h1>
               <div className="space-y-2.5">
-                <p className="text-lg text-muted-foreground leading-relaxed text-left">
-                  i'm 17 and i'm a full stack software engineer, i love building
-                  and creating new things.
+                <p className="text-lg text-muted-foreground leading-relaxed text-left max-w-[46ch]">
+                  i'm 17 and i'm a full stack software engineer, i love
+                  tinkering and building new things.
                 </p>
                 <div className="flex flex-col items-left gap-3 text-md text-muted-foreground">
                   <span className="flex items-center gap-2.5">
@@ -55,7 +57,18 @@ function App() {
                   </span>
                   <span className="flex items-center gap-1.5">
                     <Building className="w-4 h-4" strokeWidth={2.25} />
-                    Founding Engineer @ MediScan AI
+                    Founding Engineer @
+                    <a
+                      href="https://mediscan.ai"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4 decoration-muted-foreground/40 hover:decoration-foreground/60"
+                      style={{
+                        paddingLeft: "5px",
+                      }}
+                    >
+                      MediScan AI
+                    </a>
                   </span>
                 </div>
               </div>
@@ -70,7 +83,11 @@ function App() {
                   icon={<Linkedin className="w-5 h-5" />}
                   label="LinkedIn"
                 />
-
+                <SocialLink
+                  href="https://x.com/zekejawn"
+                  icon={<Twitter className="w-5 h-5" />}
+                  label="Twitter"
+                />
                 <SocialLink
                   href="https://mail.google.com/mail/?view=cm&fs=1&to=zekejohn118@gmail.com"
                   icon={<Mail className="w-5 h-5" />}
@@ -80,24 +97,16 @@ function App() {
             </div>
           </div>
 
-          <div className="flex flex-col justify-center lg:items-end gap-4">
-            <ProjectCard
-              href="https://mediscan.ai"
-              icon="/mediscan.svg"
-              iconBgColor="#799ED9"
-              iconZoom={122}
-              title="MediScan AI"
-              linkText="mediscan.ai"
-              description="An AI-powered medical legal record analysis platform for physicians, doctors, and lawyers. We generate accurate medical record summaries & chronologies, and do automatic in-depth case review."
-            />
+          {/* Right column */}
+          <div className="flex flex-col gap-4">
             <ProjectCard
               href="https://www.figma.com/community/plugin/1566412604365451941/buddaai-ai-design-partner"
               icon="/budda.png"
               iconBgColor="#9B88B8"
               iconZoom={150}
               title="Budda AI"
-              linkText="figma.com/BuddaAI"
-              description="An AI Design Partner for Figma. Lets you create and modify your designs agentically, pulling context from your project to match your style, using figma's native tools."
+              linkText="figma.com/plugins/BuddaAI"
+              description="An AI design partner for Figma. Lets you create and modify your designs agentically, pulling context from your project to match your style w/ figma's native tools."
             />
             <ProjectCard
               href="https://sumanyai.com"
@@ -106,12 +115,52 @@ function App() {
               iconZoom={115}
               title="Sumany AI"
               linkText="sumanyai.com"
-              description="A serverless SAAS that summarizes long documents and text using open source transformer models that I quantized for performance. One of the first ever projects I launched ('22) & got paying customers for."
+              description="Lets you summarize documents using open source transformer models that i quantized for performance. One of the first projects i launched (in 2022) & got paying customers for."
             />
+            <div className="text-sm text-muted-foreground mt-auto">
+              <p>...and some other open source projects i'm proud of :)</p>
+              <p className="mt-1.5">
+                <a
+                  href="https://github.com/zeke-john/codecall"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4 decoration-muted-foreground/40 hover:decoration-foreground/60"
+                >
+                  codecall
+                </a>
+                {", "}
+                <a
+                  href="https://github.com/zeke-john/rune"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4 decoration-muted-foreground/40 hover:decoration-foreground/60"
+                >
+                  rune
+                </a>
+                {", "}
+                <a
+                  href="https://github.com/zeke-john/awsm"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4 decoration-muted-foreground/40 hover:decoration-foreground/60"
+                >
+                  awsm
+                </a>
+                {", "}
+                <a
+                  href="https://github.com/zeke-john/komplete"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4 decoration-muted-foreground/40 hover:decoration-foreground/60"
+                >
+                  komplete
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </div>
-      <footer className="w-full pb-5 flex justify-center text-muted-foreground leading-relaxed text-sm">
+      <footer className="w-full pb-5 flex justify-center text-muted-foreground/40 leading-relaxed text-xs">
         © {new Date().getFullYear()} Zeke John. All rights reserved.
       </footer>
     </main>
@@ -154,7 +203,7 @@ const HeaderTiltCard = () => {
   };
 
   return (
-    <div className="w-full max-w-2xl">
+    <div className="w-full lg:max-w-2xl">
       <div
         ref={cardRef}
         className="tilt-card"
@@ -198,7 +247,7 @@ const GitHubHeatmap = ({ username }: { username: string }) => {
     const fetchContributions = async () => {
       try {
         const response = await fetch(
-          `https://github-contributions-api.jogruber.de/v4/${username}?y=last`
+          `https://github-contributions-api.jogruber.de/v4/${username}?y=last`,
         );
         const data = await response.json();
         const contributions = data.contributions || [];
@@ -215,14 +264,14 @@ const GitHubHeatmap = ({ username }: { username: string }) => {
               weekMap.set(weekKey, []);
             }
             weekMap.get(weekKey)?.push(day);
-          }
+          },
         );
 
         const sortedWeeks = Array.from(weekMap.entries())
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([, days]) => ({
             days: days.sort(
-              (a, b) => new Date(a.date).getDay() - new Date(b.date).getDay()
+              (a, b) => new Date(a.date).getDay() - new Date(b.date).getDay(),
             ),
           }));
 
@@ -257,7 +306,7 @@ const GitHubHeatmap = ({ username }: { username: string }) => {
         {Array.from({ length: 7 }).map((_, dayIndex) =>
           weeks.map((week, weekIndex) => {
             const day = week.days.find(
-              (d) => new Date(d.date).getDay() === dayIndex
+              (d) => new Date(d.date).getDay() === dayIndex,
             );
             const level = day?.level ?? 0;
             return (
@@ -267,7 +316,7 @@ const GitHubHeatmap = ({ username }: { username: string }) => {
                 style={{ backgroundColor: LEVEL_COLORS[level] }}
               />
             );
-          })
+          }),
         )}
       </div>
     </div>

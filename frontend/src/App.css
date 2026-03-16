@@ -129,6 +129,8 @@
   border-radius: 12px;
   padding: 20px;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .project-header-wrapper {
@@ -197,6 +199,7 @@
 .project-body {
   padding-left: 8px;
   margin-top: 0;
+  flex: 1;
 }
 
 .project-description {

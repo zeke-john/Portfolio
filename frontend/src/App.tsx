@@ -27,7 +27,7 @@ function App() {
             customers and learned a lot about designer workflows.
           </li>
           <li>
-            <A href="https://sumanyai.com">Sumany AI</A>{" "}
+            <A href="https://sumanyai.com">Sumany AI</A>
             <span className="inline-block mx-[8px]">~</span>lets you summarize
             documents using open weight transformer models (before chatgpt in
             '22), my first project that i got paying users for.
@@ -50,7 +50,7 @@ function App() {
         <p>
           you can find me on <A href="https://github.com/zeke-john">github</A>,
           {"  "}
-          <A href="https://x.com/zekejawn">(x) twitter</A>,{"  "}
+          <A href="https://x.com/zekejawn">x (twitter)</A>,{"  "}
           <A href="https://www.linkedin.com/in/zeke-john-131ba1351/">
             linkedin
           </A>

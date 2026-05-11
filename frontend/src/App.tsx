@@ -1,10 +1,11 @@
 import "./App.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function App() {
   return (
-    <main className="min-h-screen flex justify-center px-6 pt-[14vh] pb-16">
-      <div className="max-w-[620px] w-full space-y-7 text-[19px] leading-relaxed">
+    <main className="min-h-screen flex justify-center px-6 pt-[14vh] pb-16 relative overflow-hidden">
+      <Particles />
+      <div className="max-w-[620px] w-full space-y-7 text-[19px] leading-relaxed fade-in">
         <p>
           hey! i'm zeke. i'm 17, based in seattle, and a founding engineer at{" "}
           <A href="https://mediscan.ai">MediScan AI</A>.
@@ -58,6 +59,65 @@ function App() {
         </p>
       </div>
     </main>
+  );
+}
+
+function Particles() {
+  const [particles, setParticles] = useState<
+    { id: number; x: number; y: number; delay: number; char: string }[]
+  >([]);
+
+  useEffect(() => {
+    const chars = ["!", "*", "%", "#", "$"];
+    const items: typeof particles = [];
+
+    for (let i = 0; i < 16; i++) {
+      // Pick a side: 0=left, 1=right, 2=bottom
+      const side = Math.floor(Math.random() * 3);
+      let x: number, y: number;
+
+      if (side === 0) {
+        // Left of text container
+        x = Math.random() * 15;
+        y = 10 + Math.random() * 60;
+      } else if (side === 1) {
+        // Right of text container
+        x = 85 + Math.random() * 15;
+        y = 10 + Math.random() * 60;
+      } else {
+        // Below text container
+        x = 15 + Math.random() * 70;
+        y = 80 + Math.random() * 18;
+      }
+
+      items.push({
+        id: i,
+        x,
+        y,
+        delay: Math.random() * 0.6,
+        char: chars[Math.floor(Math.random() * chars.length)],
+      });
+    }
+
+    setParticles(items);
+  }, []);
+
+  return (
+    <div className="particles" aria-hidden="true">
+      {particles.map((p) => (
+        <span
+          key={p.id}
+          className="particle"
+          style={{
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            animationDelay: `${p.delay}s`,
+          }}
+        >
+          {p.char}
+        </span>
+      ))}
+    </div>
   );
 }
 

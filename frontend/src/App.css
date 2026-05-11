@@ -14,3 +14,54 @@ p, li {
   width: fit-content;
 }
 
+/* Fade in - blur to clear, no movement */
+.fade-in {
+  opacity: 0;
+  filter: blur(6px);
+  animation: fadeIn 1.2s ease forwards;
+  animation-delay: 0.1s;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+/* Particles */
+.particles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.particle {
+  position: absolute;
+  color: #9aaa97;
+  opacity: 0;
+  font-size: 15px;
+  font-family: monospace;
+  font-weight: 300;
+  animation: particleFade 2s ease-out forwards;
+}
+
+@keyframes particleFade {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  20% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  55% {
+    opacity: 0.5;
+    transform: scale(0.95) translateY(-6px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.6) translateY(-16px);
+  }
+}

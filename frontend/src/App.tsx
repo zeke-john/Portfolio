@@ -4,7 +4,7 @@ import { useState } from "react";
 function App() {
   return (
     <main className="min-h-screen flex justify-center px-6 pt-[14vh] pb-16">
-      <div className="max-w-[620px] w-full space-y-7 text-[19.5px] leading-relaxed">
+      <div className="max-w-[620px] w-full space-y-7 text-[19px] leading-relaxed">
         <p>
           hey! i'm zeke. i'm 17, based in seattle, and a founding engineer at{" "}
           <A href="https://mediscan.ai">MediScan AI</A>.

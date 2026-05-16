@@ -12,10 +12,11 @@
 
 html {
   scroll-behavior: smooth;
+  background-color: #fdfcfb;
 }
 
 body {
-  background-color: #d9d7d5;
+  background-color: #fdfcfb;
   color: #000;
   font-family: 'EB Garamond', serif !important;
   -webkit-font-smoothing: antialiased;

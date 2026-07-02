@@ -12,18 +12,18 @@
 
 html {
   scroll-behavior: smooth;
-  background-color: #fdfcfb;
+  background-color: #020102;
 }
 
 body {
-  background-color: #fdfcfb;
-  color: #000;
+  background-color: #020102;
+  color: #f4f3f4;
   font-family: 'EB Garamond', serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background-color: #e8a87080;
-  color: #1a1a1a;
+  background-color: rgba(244, 243, 244, 0.18);
+  color: #f4f3f4;
 }

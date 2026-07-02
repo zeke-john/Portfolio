@@ -23,8 +23,8 @@ function App() {
               Budda AI
             </A>
             <span className="inline-block mx-[8px]">~</span>an agentic ai design
-            tool for figma w/ their native tooling, got around 20 paying
-            customers and learned a lot about designer workflows.
+            tool for figma w/ their native tooling, got around 10 paying users
+            and learned a lot about designer workflows.
           </li>
           <li>
             <A href="https://sumanyai.com">Sumany AI</A>
@@ -75,7 +75,7 @@ function EmailLink() {
     <span>
       <button
         onClick={handleClick}
-        className="underline underline-offset-[3px] decoration-black/40 hover:decoration-black transition-colors"
+        className="underline underline-offset-[3px] decoration-[#f4f3f4]/40 hover:decoration-[#f4f3f4] transition-colors"
       >
         email
       </button>
@@ -90,7 +90,7 @@ function A({ href, children }: { href: string; children: React.ReactNode }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="underline underline-offset-[3px] decoration-black/40 hover:decoration-black transition-colors"
+      className="underline underline-offset-[3px] decoration-[#f4f3f4]/40 hover:decoration-[#f4f3f4] transition-colors"
     >
       {children}
     </a>

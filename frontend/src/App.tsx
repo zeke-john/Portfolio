@@ -1,12 +1,31 @@
 import "./App.css";
 import { useState } from "react";
+import { Ascii } from "ascii.rest/react";
+import { marineDrive } from "ascii.rest/pieces";
+
+// same scene, but on the page's own black so it has no visible edge
+const marineDriveOnBlack = {
+  ...marineDrive,
+  meta: { ...marineDrive.meta, ground: "#020102" },
+};
+
+// birthday: november 11, 2008. The age ticks over at local midnight.
+function ageOn(today: Date) {
+  const birthYear = 2008, birthMonth = 10, birthDay = 11; // months are 0-based
+  const hadBirthday =
+    today.getMonth() > birthMonth ||
+    (today.getMonth() === birthMonth && today.getDate() >= birthDay);
+  return today.getFullYear() - birthYear - (hadBirthday ? 0 : 1);
+}
 
 function App() {
+  const age = ageOn(new Date());
   return (
-    <main className="min-h-screen flex justify-center px-6 pt-[14vh] pb-16">
+    <div className="min-h-screen flex flex-col">
+      <main className="relative z-10 flex justify-center px-6 pt-[14vh]">
       <div className="max-w-[620px] w-full space-y-7 text-[19px] leading-relaxed">
         <p>
-          hey! i'm zeke. i'm 17, based in seattle, and a founding engineer at{" "}
+          hey! i'm zeke. i'm {age}, based in seattle, and a founding engineer at{" "}
           <A href="https://mediscan.ai">MediScan AI</A>.
         </p>
 
@@ -23,7 +42,7 @@ function App() {
               Budda AI
             </A>
             <span className="inline-block mx-[8px]">~</span>an agentic ai design
-            tool for figma w/ their native tooling, got around 10 paying users
+            tool for figma w/ their native tooling, got around 8 paying users
             and learned a lot about designer workflows.
           </li>
           <li>
@@ -43,8 +62,8 @@ function App() {
         </ul>
 
         <p>
-          in my free time when im not coding, i love making beats on my mpc,
-          messing around w/ linux, reading, and continuously learning!
+          in my free time i also love making beats on my mpc, playing
+          basketball, and reading!
         </p>
 
         <p>
@@ -57,7 +76,16 @@ function App() {
           , or via <EmailLink />.
         </p>
       </div>
-    </main>
+      </main>
+
+      <footer className="scene-footer mt-auto">
+        <Ascii
+          piece={marineDriveOnBlack}
+          label="marine drive, mumbai's queen's necklace at night"
+          className="marine-drive"
+        />
+      </footer>
+    </div>
   );
 }
 

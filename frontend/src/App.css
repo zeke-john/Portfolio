@@ -13,3 +13,48 @@ p, li {
   cursor: text;
   width: fit-content;
 }
+
+/* Footer scene: full width, flush with the bottom of the page, and fading
+   in from the text above, out at the sides, and out again into the bottom edge */
+.scene-footer {
+  position: relative;
+  width: 100%;
+  height: min(50vw, 720px);
+  margin-top: -1rem; /* the faded sky starts just under the last line */
+  overflow: hidden;
+  opacity: 0.8;
+  --fade-y: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.15) 14%,
+    rgba(0, 0, 0, 0.55) 30%,
+    #000 48%,
+    #000 72%,
+    rgba(0, 0, 0, 0.45) 88%,
+    transparent 100%
+  );
+  --fade-x: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 0.2) 8%,
+    rgba(0, 0, 0, 0.6) 20%,
+    #000 35%,
+    #000 65%,
+    rgba(0, 0, 0, 0.6) 80%,
+    rgba(0, 0, 0, 0.2) 92%,
+    transparent 100%
+  );
+  -webkit-mask-image: var(--fade-y), var(--fade-x);
+  mask-image: var(--fade-y), var(--fade-x);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+.marine-drive {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+}

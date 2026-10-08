@@ -14,13 +14,21 @@ p, li {
   width: fit-content;
 }
 
-/* Footer scene: full width, flush with the bottom of the page, and fading
-   in from the text above, out at the sides, and out again into the bottom edge */
+/* Text on top, the scene at the bottom of the page. You scroll down to it and
+   the page ends just below the necklace, with only a sliver of water showing. */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Footer scene: full width, fading in from the text above, out at the sides,
+   and out again into the bottom edge of the page */
 .scene-footer {
   position: relative;
   width: 100%;
-  height: min(50vw, 720px);
-  margin-top: -1rem; /* the faded sky starts just under the last line */
+  height: 33vw; /* ~66% of the 2:1 scene: the page ends a little below the necklace */
+  margin-top: -1rem;
   overflow: hidden;
   opacity: 0.8;
   --fade-y: linear-gradient(
@@ -29,8 +37,8 @@ p, li {
     rgba(0, 0, 0, 0.15) 14%,
     rgba(0, 0, 0, 0.55) 30%,
     #000 48%,
-    #000 72%,
-    rgba(0, 0, 0, 0.45) 88%,
+    #000 88%,
+    rgba(0, 0, 0, 0.6) 95%,
     transparent 100%
   );
   --fade-x: linear-gradient(
@@ -50,6 +58,8 @@ p, li {
   mask-composite: intersect;
 }
 
+/* The scene is a 2:1 picture; the band above shows its top ~64%, which is the
+   sky, the towers and the necklace, cut off where the water begins */
 .marine-drive {
   display: block;
   position: absolute;
@@ -57,4 +67,11 @@ p, li {
   left: 0;
   width: 100%;
   aspect-ratio: 2 / 1;
+}
+
+/* Narrower than 1200px: no scene */
+@media (max-width: 1199px) {
+  .scene-footer {
+    display: none;
+  }
 }

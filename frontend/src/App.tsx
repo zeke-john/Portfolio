@@ -21,9 +21,9 @@ function ageOn(today: Date) {
 function App() {
   const age = ageOn(new Date());
   return (
-    <div className="min-h-screen flex flex-col">
-      <main className="relative z-10 flex justify-center px-6 pt-[14vh]">
-      <div className="max-w-[620px] w-full space-y-7 text-[19px] leading-relaxed">
+    <div className="page">
+      <main className="relative z-10 shrink-0 flex justify-center px-7 pt-[18vh] pb-24 scene:px-6 scene:pt-[20vh] scene:pb-0">
+      <div className="max-w-[680px] w-full space-y-7 text-[21px] leading-relaxed">
         <p>
           hey! i'm zeke. i'm {age}, based in seattle, and a founding engineer at{" "}
           <A href="https://mediscan.ai">MediScan AI</A>.

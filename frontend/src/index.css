@@ -10,20 +10,26 @@
   box-sizing: border-box;
 }
 
+:root {
+  /* set from the scene: dark ink by day, pale ink by night */
+  --ink: #1a1816;
+  --night: 0;
+  --paper: #e9e6dc;
+}
+
 html {
   scroll-behavior: smooth;
-  background-color: #020102;
+  background-color: var(--paper);
 }
 
 body {
-  background-color: #020102;
-  color: #f4f3f4;
+  background-color: var(--paper);
+  color: var(--ink);
   font-family: 'EB Garamond', serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background-color: rgba(244, 243, 244, 0.18);
-  color: #f4f3f4;
+  background-color: rgba(30, 28, 24, 0.18);
 }

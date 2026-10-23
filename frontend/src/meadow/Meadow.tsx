@@ -120,7 +120,10 @@ export default function Meadow() {
 
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const forceRain = location.hash === "#rain"; // preview the rain spell
-    const touch = matchMedia("(pointer: coarse)").matches;
+    // Phones get a still painting: one frame at the real time of day, then
+    // nothing runs. No handles, no trail, no clock.
+    const isStatic = matchMedia("(pointer: coarse)").matches || window.innerWidth < 760;
+    document.documentElement.dataset.static = isStatic ? "1" : "0";
 
     // --------------------------------------------------------- programs ----
     const compile = (type: number, src: string) => {
@@ -215,11 +218,8 @@ export default function Meadow() {
       portrait = w < h;
       flowH = Math.max(16, Math.round(FLOW_W / aspect));
       sizeTargets();
-      // the paint hides a low internal resolution, so cap it hard; phones
-      // get a much lower cap so the shader stays cheap on a mobile GPU
-      const scale = touch
-        ? Math.min(window.devicePixelRatio || 1, 1, 640 / w)
-        : Math.min(window.devicePixelRatio || 1, 1.5, 1400 / w);
+      // the paint hides a low internal resolution, so cap it hard
+      const scale = Math.min(window.devicePixelRatio || 1, 1.5, 1400 / w);
       canvas.width = Math.max(1, Math.floor(w * scale));
       canvas.height = Math.max(1, Math.floor(h * scale));
       gl.useProgram(scene);
@@ -227,6 +227,10 @@ export default function Meadow() {
       gl.uniform2f(us.res, canvas.width, canvas.height);
       gl.useProgram(splat);
       gl.uniform1f(up.aspect, aspect);
+      if (isStatic) {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(frame); // one fresh frame for the new size
+      }
     };
 
     // ------------------------------------------------------------ orbit ----
@@ -268,16 +272,17 @@ export default function Meadow() {
     // Trail over the whole page: the canvas can't take events, so watch the window.
     const ptr = { x: -1, y: -1, px: -1, py: -1, has: false, moved: false };
     const onWindowMove = (e: PointerEvent) => {
-      if (e.pointerType === "touch") return; // scrolling a phone isn't painting
       ptr.x = e.clientX / w;
       ptr.y = 1 - e.clientY / h;
       if (!ptr.has) { ptr.px = ptr.x; ptr.py = ptr.y; ptr.has = true; }
       ptr.moved = true;
     };
     const onWindowLeave = () => { ptr.has = false; ptr.moved = false; };
-    window.addEventListener("pointermove", onWindowMove, { passive: true });
-    window.addEventListener("pointerdown", onWindowMove, { passive: true });
-    document.addEventListener("pointerleave", onWindowLeave);
+    if (!isStatic) {
+      window.addEventListener("pointermove", onWindowMove, { passive: true });
+      window.addEventListener("pointerdown", onWindowMove, { passive: true });
+      document.addEventListener("pointerleave", onWindowLeave);
+    }
 
     const bind = (el: HTMLDivElement, which: Body) => {
       const grabAt = { x: 0, y: 0 };
@@ -321,14 +326,14 @@ export default function Meadow() {
         el.removeEventListener("pointerleave", onLeave);
       };
     };
-    const unbindSun = bind(sunEl, "sun");
-    const unbindMoon = bind(moonEl, "moon");
+    const unbindSun = isStatic ? () => {} : bind(sunEl, "sun");
+    const unbindMoon = isStatic ? () => {} : bind(moonEl, "moon");
 
     // ------------------------------------------------------------- loop ----
     let raf = 0;
     let lastFrame = 0;
     const frame = (now: number) => {
-      raf = requestAnimationFrame(frame);
+      if (!isStatic) raf = requestAnimationFrame(frame);
       // 30fps when idle keeps laptops cool; full rate while dragging or painting
       const busy = dragging !== null || ptr.moved;
       if (!busy && now - lastFrame < 33) return;
@@ -336,7 +341,7 @@ export default function Meadow() {
       lastFrame = now;
       lastTick = now;
 
-      if (!reduced && !dragging) phase += (dt * TAU) / DAY_SECONDS;
+      if (!reduced && !dragging && !isStatic) phase += (dt * TAU) / DAY_SECONDS;
 
       // released bodies drift back onto the orbit
       for (const b of ["sun", "moon"] as Body[]) {
@@ -383,14 +388,14 @@ export default function Meadow() {
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.useProgram(scene);
       gl.bindTexture(gl.TEXTURE_2D, targets[readIdx].tex);
-      gl.uniform1f(us.time, reduced ? 0 : (now - t0) / 1000);
+      gl.uniform1f(us.time, reduced || isStatic ? 0 : (now - t0) / 1000);
       gl.uniform2f(us.sun, sun.x, sun.y);
       gl.uniform2f(us.moon, moon.x, moon.y);
       gl.uniform1f(us.night, night);
       gl.uniform1f(us.dusk, duskFor(sun.y));
       gl.uniform1f(us.sunHover, hover.sun);
       gl.uniform1f(us.moonHover, hover.moon);
-      gl.uniform1f(us.rain, forceRain ? 1 : reduced ? 0 : rainAt((now - t0) / 1000));
+      gl.uniform1f(us.rain, forceRain ? 1 : reduced || isStatic ? 0 : rainAt((now - t0) / 1000));
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     };
 

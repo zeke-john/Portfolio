@@ -423,7 +423,6 @@ export default function Meadow() {
       <div ref={sunRef} className="sky-handle" aria-label="drag the sun" role="slider" />
       <div ref={moonRef} className="sky-handle" aria-label="drag the moon" role="slider" />
       <div className="clock" aria-live="off">
-        <span className="clock-place">seattle</span>
         <span ref={clockRef} className="clock-time" />
       </div>
     </>

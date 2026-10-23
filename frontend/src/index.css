@@ -30,6 +30,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Selecting text highlights it like a highlighter, day or night */
 ::selection {
-  background-color: rgba(30, 28, 24, 0.18);
+  background-color: rgba(255, 240, 90, 0.6);
+  color: #1a1816;
 }

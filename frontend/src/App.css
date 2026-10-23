@@ -25,6 +25,10 @@ p, li {
   text-decoration-color: var(--ink);
   background-size: 100% 0.95em;
 }
+/* While text is selected, the hover sweep stays off so the two don't fight */
+html[data-selecting="1"] .lnk:hover {
+  background-size: 0% 0.95em;
+}
 html[data-night="1"] .lnk {
   --brush: rgba(255, 240, 90, 0.34);
 }
@@ -35,27 +39,20 @@ html[data-night="1"] .lnk {
   flex-direction: column;
 }
 
-/* A light feathered wash behind the text column so it reads over hills and
-   grass, in daylight, at dusk and at night */
-.page main > div {
-  position: relative;
+/* Every line of text sits on its own painted strip of paper, cloned per line
+   like a highlighter stroke, so the words always sit in front of the scene */
+.hl {
+  background: rgba(242, 238, 226, 0.82);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  padding: 0.08em 0.4em;
+  margin: 0 -0.4em;
+  border-radius: 3px;
+  box-shadow: 0 0 0 0.5px rgba(60, 50, 30, 0.08);
 }
-.page main > div::before {
-  content: "";
-  position: absolute;
-  inset: -48px -140px;
-  z-index: -1;
-  background: color-mix(in srgb, var(--paper) 32%, transparent);
-  --feather-x: linear-gradient(to right, transparent 0%, #000 30%, #000 70%, transparent 100%);
-  --feather-y: linear-gradient(to bottom, transparent 0%, #000 18%, #000 82%, transparent 100%);
-  -webkit-mask-image: var(--feather-x), var(--feather-y);
-  mask-image: var(--feather-x), var(--feather-y);
-  -webkit-mask-composite: source-in;
-  mask-composite: intersect;
-  pointer-events: none;
-}
-html[data-night="1"] .page main > div::before {
-  background: rgba(8, 12, 26, 0.3);
+html[data-night="1"] .hl {
+  background: rgba(10, 14, 28, 0.66);
+  box-shadow: none;
 }
 
 /* ---------------------------------------------------------- the meadow ---- */
@@ -109,15 +106,6 @@ html[data-night="1"] .page main > div::before {
 
 /* Narrow screens: the text runs over the whole painting, so frost the column */
 @media (max-width: 760px) {
-  .page main > div::before {
-    inset: -16px -20px;
-    background: color-mix(in srgb, var(--paper) 55%, transparent);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-  }
-  html[data-night="1"] .page main > div::before {
-    background: rgba(8, 12, 26, 0.5);
-  }
 }
 /* Clock for the orbit: the painted time of day in Seattle */
 .clock {
@@ -143,6 +131,12 @@ html[data-night="1"] .page main > div::before {
 }
 .meadow[data-supported="0"] ~ .clock {
   display: none;
+}
+/* Narrow screens: the text column runs to the bottom, so no clock */
+@media (max-width: 760px) {
+  .clock {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

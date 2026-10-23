@@ -19,8 +19,8 @@ function App() {
   return (
     <div className="page">
       <Meadow />
-      <main className="relative z-10 shrink-0 flex justify-center px-7 pt-[18vh] pb-24 scene:px-6 scene:pt-[20vh]">
-        <div className="max-w-[760px] w-full space-y-8 text-[24px] leading-relaxed">
+      <main className="relative z-10 shrink-0 flex justify-center px-5 pt-[12vh] pb-24 md:px-7 md:pt-[18vh] scene:px-6 scene:pt-[20vh]">
+        <div className="max-w-[760px] w-full space-y-6 text-[18px] leading-relaxed md:space-y-8 md:text-[22px] scene:text-[24px]">
           <p>
             <span className="hl">
               hey! i'm zeke. i'm {age}, based in seattle, and a founding

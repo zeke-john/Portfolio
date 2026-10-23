@@ -132,10 +132,43 @@ html[data-night="1"] .hl {
 .meadow[data-supported="0"] ~ .clock {
   display: none;
 }
-/* Narrow screens: the text column runs to the bottom, so no clock */
-@media (max-width: 760px) {
-  .clock {
+/* Phones and touch screens: no clock, no draggable sun or moon */
+@media (max-width: 760px), (pointer: coarse) {
+  .clock,
+  .sky-handle {
     display: none;
+  }
+}
+
+/* Narrow screens: one quiet block per paragraph instead of a strip per line */
+@media (max-width: 760px) {
+  .hl {
+    background: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+  }
+  .page main p,
+  .page main li {
+    width: auto;
+    background: rgba(242, 238, 226, 0.84);
+    padding: 0.55em 0.75em;
+    border-radius: 6px;
+  }
+  .page main ul {
+    padding-left: 0;
+    list-style-position: inside;
+  }
+  .page main li {
+    padding-left: 1.9em;
+    text-indent: -1.15em;
+  }
+  .page main ul li::marker {
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
+  }
+  html[data-night="1"] .page main p,
+  html[data-night="1"] .page main li {
+    background: rgba(10, 14, 28, 0.7);
   }
 }
 

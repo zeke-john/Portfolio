@@ -21,6 +21,11 @@ html {
   scroll-behavior: smooth;
   background-color: var(--paper);
 }
+/* Overscroll and status-bar areas take the scene's mood */
+html[data-night="1"],
+html[data-night="1"] body {
+  background-color: #0b1022;
+}
 
 body {
   background-color: var(--paper);

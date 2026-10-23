@@ -120,6 +120,7 @@ export default function Meadow() {
 
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const forceRain = location.hash === "#rain"; // preview the rain spell
+    const touch = matchMedia("(pointer: coarse)").matches;
 
     // --------------------------------------------------------- programs ----
     const compile = (type: number, src: string) => {
@@ -214,8 +215,11 @@ export default function Meadow() {
       portrait = w < h;
       flowH = Math.max(16, Math.round(FLOW_W / aspect));
       sizeTargets();
-      // the paint hides a low internal resolution, so cap it hard
-      const scale = Math.min(window.devicePixelRatio || 1, 1.5, 1400 / w);
+      // the paint hides a low internal resolution, so cap it hard; phones
+      // get a much lower cap so the shader stays cheap on a mobile GPU
+      const scale = touch
+        ? Math.min(window.devicePixelRatio || 1, 1, 640 / w)
+        : Math.min(window.devicePixelRatio || 1, 1.5, 1400 / w);
       canvas.width = Math.max(1, Math.floor(w * scale));
       canvas.height = Math.max(1, Math.floor(h * scale));
       gl.useProgram(scene);
@@ -264,6 +268,7 @@ export default function Meadow() {
     // Trail over the whole page: the canvas can't take events, so watch the window.
     const ptr = { x: -1, y: -1, px: -1, py: -1, has: false, moved: false };
     const onWindowMove = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return; // scrolling a phone isn't painting
       ptr.x = e.clientX / w;
       ptr.y = 1 - e.clientY / h;
       if (!ptr.has) { ptr.px = ptr.x; ptr.py = ptr.y; ptr.has = true; }

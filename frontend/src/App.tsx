@@ -1,5 +1,5 @@
 import "./App.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Meadow from "./meadow/Meadow";
 
 // birthday: november 11, 2008. The age ticks over at local midnight.
@@ -21,12 +21,12 @@ function App() {
       <Meadow />
       <main className="relative z-10 shrink-0 flex justify-center px-7 pt-[18vh] pb-24 scene:px-6 scene:pt-[20vh]">
         <div className="max-w-[760px] w-full space-y-8 text-[24px] leading-relaxed">
-          <p>
+          <h1>
             <span className="hl">
               hey! i'm zeke. i'm {age}, based in seattle, and a founding
               engineer at <A href="https://mediscan.ai">MediScan AI</A>.
             </span>
-          </p>
+          </h1>
 
           <p>
             <span className="hl">
@@ -108,21 +108,43 @@ function useSelectionFlag() {
   }, []);
 }
 
-function EmailLink() {
-  const [copied, setCopied] = useState(false);
+const EMAIL = "zekejohn118@gmail.com";
 
-  const handleClick = () => {
-    navigator.clipboard.writeText("zekejohn118@gmail.com");
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+type CopyStatus = "idle" | "copied" | "error";
+
+function EmailLink() {
+  const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
+  const resetTimer = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => window.clearTimeout(resetTimer.current), []);
+
+  const handleClick = async () => {
+    window.clearTimeout(resetTimer.current);
+    try {
+      await navigator.clipboard.writeText(EMAIL);
+      setCopyStatus("copied");
+    } catch {
+      // Clipboard access can be unavailable or denied; show the address so it
+      // can still be copied manually instead of reporting a false success.
+      setCopyStatus("error");
+    }
+    resetTimer.current = window.setTimeout(() => setCopyStatus("idle"), 4000);
   };
 
   return (
     <span>
-      <button onClick={handleClick} className="lnk">
+      <button
+        type="button"
+        onClick={handleClick}
+        className="lnk"
+        aria-label="Copy email address"
+      >
         email
       </button>
-      {copied && <span> (copied!)</span>}
+      <span role="status" aria-live="polite" aria-atomic="true">
+        {copyStatus === "copied" && " (copied!)"}
+        {copyStatus === "error" && ` (copy failed: ${EMAIL})`}
+      </span>
     </span>
   );
 }

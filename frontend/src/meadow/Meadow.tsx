@@ -97,9 +97,8 @@ type Body = "sun" | "moon";
 const PHONE = "(max-width: 650px)";
 
 export default function Meadow() {
-  // Phones get a plain page: black background, white text, no scene at all.
-  // Follows the media query live, so a desktop window dragged narrow and back
-  // gets the scene back.
+  // Keep a static painting underneath the live scene on phones. Besides the
+  // fast first paint, it covers Safari toolbar resizing and WebGL failures.
   const [phone, setPhone] = useState(() => matchMedia(PHONE).matches);
   useEffect(() => {
     const mq = matchMedia(PHONE);
@@ -114,7 +113,6 @@ export default function Meadow() {
   const [supported, setSupported] = useState(true);
 
   useEffect(() => {
-    if (phone) return;
     const canvas = canvasRef.current;
     const sunEl = sunRef.current;
     const moonEl = moonRef.current;
@@ -191,7 +189,9 @@ export default function Meadow() {
     gl.uniform1i(up.prev, 0);
 
     // ---------------------------------------------- wet-paint flow texture ----
-    const FLOW_W = 256;
+    // The flow pass is fill-rate bound on older phone GPUs; half the horizontal
+    // resolution is invisible under the brush texture but substantially cheaper.
+    const FLOW_W = window.innerWidth <= 650 ? 128 : 256;
     let flowH = 144;
     const makeTarget = () => {
       const tex = gl.createTexture()!;
@@ -221,19 +221,30 @@ export default function Meadow() {
     // ------------------------------------------------------------- size ----
     let w = 1, h = 1, portrait = false, aspect = 1;
     const resize = () => {
-      // the canvas box is the large viewport (see .meadow in App.css), which
-      // on iPhone Safari reaches under the translucent toolbar; innerHeight
-      // doesn't, and sizing from it leaves a bare strip behind the toolbar
-      w = canvas.clientWidth || window.innerWidth;
-      h = canvas.clientHeight || window.innerHeight;
+      // Size from the actual canvas box, not innerHeight: Safari's toolbar makes
+      // those disagree. The fixed fallback underneath covers any intermediate
+      // resize frame as well as the area behind the translucent toolbar.
+      const nextW = canvas.clientWidth || document.documentElement.clientWidth;
+      const nextH = canvas.clientHeight || window.innerHeight;
+      const phoneSize = nextW <= 650;
+      const scale = Math.min(
+        window.devicePixelRatio || 1,
+        phoneSize ? 1.25 : 1.5,
+        (phoneSize ? 900 : 1400) / nextW,
+      );
+      const pixelW = Math.max(1, Math.floor(nextW * scale));
+      const pixelH = Math.max(1, Math.floor(nextH * scale));
+      // Safari can emit duplicate window + visualViewport resize events.
+      if (nextW === w && nextH === h && canvas.width === pixelW && canvas.height === pixelH) return;
+      w = nextW;
+      h = nextH;
       aspect = w / h;
       portrait = w < h;
       flowH = Math.max(16, Math.round(FLOW_W / aspect));
       sizeTargets();
-      // the paint hides a low internal resolution, so cap it hard
-      const scale = Math.min(window.devicePixelRatio || 1, 1.5, 1400 / w);
-      canvas.width = Math.max(1, Math.floor(w * scale));
-      canvas.height = Math.max(1, Math.floor(h * scale));
+      // The paint hides a low internal resolution, so cap it hard.
+      canvas.width = pixelW;
+      canvas.height = pixelH;
       gl.useProgram(scene);
       gl.uniform1f(us.knee, portrait ? KNEE : 0);
       gl.uniform2f(us.res, canvas.width, canvas.height);
@@ -274,14 +285,25 @@ export default function Meadow() {
     })();
     let lastClock = "";
     const applyClock = () => {
-      const txt = formatHours(phaseToHours(phase));
-      if (txt !== lastClock) { lastClock = txt; clockEl.textContent = txt; }
+      const hours = phaseToHours(phase);
+      const txt = formatHours(hours);
+      if (txt === lastClock) return;
+      lastClock = txt;
+      clockEl.textContent = txt;
+      const minutes = Math.floor(hours * 60);
+      for (const el of [sunEl, moonEl]) {
+        el.setAttribute("aria-valuenow", String(minutes));
+        el.setAttribute("aria-valuetext", txt);
+      }
     };
 
     // ---------------------------------------------------------- pointer ----
     // Trail over the whole page: the canvas can't take events, so watch the window.
     const ptr = { x: -1, y: -1, px: -1, py: -1, has: false, moved: false };
     const onWindowMove = (e: PointerEvent) => {
+      // Touch scrolling shouldn't spawn paint trails or force the 60fps busy
+      // path. Dragging a celestial body still runs at full rate separately.
+      if (e.pointerType === "touch") return;
       ptr.x = e.clientX / w;
       ptr.y = 1 - e.clientY / h;
       if (!ptr.has) { ptr.px = ptr.x; ptr.py = ptr.y; ptr.has = true; }
@@ -319,12 +341,33 @@ export default function Meadow() {
       };
       const onEnter = () => { hoverTarget[which] = 1; };
       const onLeave = () => { hoverTarget[which] = 0; };
+      const onKeyDown = (e: KeyboardEvent) => {
+        let hours = phaseToHours(phase);
+        switch (e.key) {
+          case "ArrowRight":
+          case "ArrowUp": hours += 0.25; break;
+          case "ArrowLeft":
+          case "ArrowDown": hours -= 0.25; break;
+          case "PageUp": hours += 1; break;
+          case "PageDown": hours -= 1; break;
+          case "Home": hours = 0; break;
+          case "End": hours = 23 + 59 / 60; break;
+          default: return;
+        }
+        e.preventDefault();
+        phase = hoursToPhase(hours);
+        for (const body of ["sun", "moon"] as Body[]) {
+          offset[body].x = 0;
+          offset[body].y = 0;
+        }
+      };
       el.addEventListener("pointerdown", onDown);
       el.addEventListener("pointermove", onMove);
       el.addEventListener("pointerup", onUp);
       el.addEventListener("pointercancel", onUp);
       el.addEventListener("pointerenter", onEnter);
       el.addEventListener("pointerleave", onLeave);
+      el.addEventListener("keydown", onKeyDown);
       return () => {
         el.removeEventListener("pointerdown", onDown);
         el.removeEventListener("pointermove", onMove);
@@ -332,6 +375,7 @@ export default function Meadow() {
         el.removeEventListener("pointercancel", onUp);
         el.removeEventListener("pointerenter", onEnter);
         el.removeEventListener("pointerleave", onLeave);
+        el.removeEventListener("keydown", onKeyDown);
       };
     };
     const unbindSun = bind(sunEl, "sun");
@@ -416,12 +460,14 @@ export default function Meadow() {
     resize();
     started = true;
     window.addEventListener("resize", resize);
+    window.visualViewport?.addEventListener("resize", resize);
     raf = requestAnimationFrame(frame);
     canvas.dataset.ready = "1";
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
+      window.visualViewport?.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onWindowMove);
       window.removeEventListener("pointerdown", onWindowMove);
       document.removeEventListener("pointerleave", onWindowLeave);
@@ -435,20 +481,41 @@ export default function Meadow() {
       gl.deleteBuffer(buf);
       for (const t of targets) { gl.deleteTexture(t.tex); gl.deleteFramebuffer(t.fbo); }
     };
-  }, [phone]);
-
-  if (phone) return null;
+  }, []);
 
   return (
     <>
+      {phone && <div className="mobile-meadow" aria-hidden="true" />}
       <canvas
         ref={canvasRef}
         className="meadow"
         aria-hidden="true"
         data-supported={supported ? "1" : "0"}
       />
-      <div ref={sunRef} className="sky-handle" aria-label="drag the sun" role="slider" />
-      <div ref={moonRef} className="sky-handle" aria-label="drag the moon" role="slider" />
+      <div
+        ref={sunRef}
+        className="sky-handle"
+        aria-label="Time of day, controlled by the sun"
+        aria-valuemin={0}
+        aria-valuemax={1439}
+        aria-valuenow={0}
+        aria-valuetext="12:00 am"
+        aria-orientation="horizontal"
+        role="slider"
+        tabIndex={0}
+      />
+      <div
+        ref={moonRef}
+        className="sky-handle"
+        aria-label="Time of day, controlled by the moon"
+        aria-valuemin={0}
+        aria-valuemax={1439}
+        aria-valuenow={0}
+        aria-valuetext="12:00 am"
+        aria-orientation="horizontal"
+        role="slider"
+        tabIndex={0}
+      />
       <div className="clock" aria-live="off">
         <span ref={clockRef} className="clock-time" />
       </div>

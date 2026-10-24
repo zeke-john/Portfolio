@@ -13,7 +13,7 @@ const HORIZON = 0.46;
 const DAY_SECONDS = 300; // one full cycle of the clock
 const TIME_ZONE = "America/Los_Angeles";
 // A rain spell every few minutes, fading in and out over several seconds.
-const RAIN_PERIOD = 200, RAIN_START = 110, RAIN_LENGTH = 45, RAIN_RAMP = 8;
+const RAIN_PERIOD = 100, RAIN_START = 10, RAIN_LENGTH = 35, RAIN_RAMP = 8;
 function rainAt(seconds: number) {
   const c = seconds % RAIN_PERIOD;
   const on = smoothstep(RAIN_START, RAIN_START + RAIN_RAMP, c);

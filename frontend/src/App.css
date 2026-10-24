@@ -90,17 +90,17 @@ html[data-night="1"] .hl {
   left: 0;
   width: 0;
   height: 0;
-  z-index: 20;
+  z-index: 5; /* above the painting, below the text: words always win */
   touch-action: none;
   will-change: transform;
 }
 .sky-handle::before {
   content: "";
   position: absolute;
-  left: -7vh;
-  top: -7vh;
-  width: 14vh;
-  height: 14vh;
+  left: -5.5vh;
+  top: -5.5vh;
+  width: 11vh;
+  height: 11vh;
   border-radius: 50%;
   cursor: grab;
 }
@@ -135,6 +135,12 @@ html[data-night="1"] .hl {
 }
 .meadow[data-supported="0"] ~ .clock {
   display: none;
+}
+/* Narrower windows: the text column reaches the corner, so no clock */
+@media (max-width: 900px) {
+  .clock {
+    display: none;
+  }
 }
 /* Phones: no scene, no effects. Black page, white text, plain links. */
 @media (max-width: 650px) {

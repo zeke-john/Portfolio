@@ -94,7 +94,12 @@ function inkFor(night: number) {
 
 type Body = "sun" | "moon";
 
+const PHONE = "(max-width: 760px)";
+
 export default function Meadow() {
+  // Phones get a plain page: black background, white text, no scene at all.
+  // Decided once at mount; a phone doesn't become a laptop mid-visit.
+  const [phone] = useState(() => matchMedia(PHONE).matches);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sunRef = useRef<HTMLDivElement>(null);
   const moonRef = useRef<HTMLDivElement>(null);
@@ -102,6 +107,7 @@ export default function Meadow() {
   const [supported, setSupported] = useState(true);
 
   useEffect(() => {
+    if (phone) return;
     const canvas = canvasRef.current;
     const sunEl = sunRef.current;
     const moonEl = moonRef.current;
@@ -413,7 +419,9 @@ export default function Meadow() {
       gl.deleteBuffer(buf);
       for (const t of targets) { gl.deleteTexture(t.tex); gl.deleteFramebuffer(t.fbo); }
     };
-  }, []);
+  }, [phone]);
+
+  if (phone) return null;
 
   return (
     <>

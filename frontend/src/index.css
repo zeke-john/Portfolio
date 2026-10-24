@@ -17,13 +17,19 @@
   --paper: #e9e6dc;
 }
 
+/* The page background sits behind the painting. It matches the painting's
+   bottom edge (grass by day, night sky at night) so anything Safari leaves
+   uncovered around its toolbars blends in instead of flashing paper. */
 html {
   scroll-behavior: smooth;
-  background-color: var(--paper);
+  background-color: #3a5a26;
+}
+html[data-night="1"] {
+  background-color: #0b1022;
 }
 
 body {
-  background-color: var(--paper);
+  background-color: transparent;
   color: var(--ink);
   font-family: 'EB Garamond', serif !important;
   -webkit-font-smoothing: antialiased;

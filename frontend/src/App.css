@@ -62,9 +62,12 @@ html[data-night="1"] .hl {
   left: 0;
   width: 100%;
   /* the large viewport: on iPhone Safari this reaches under the translucent
-     toolbar, so the painting shows through it instead of a bare strip */
+     toolbar, so the painting shows through it instead of a bare strip.
+     Three spellings; the last one the browser understands wins. */
   height: 100vh;
+  height: -webkit-fill-available;
   height: 100lvh;
+  min-height: 100%;
   z-index: 0;
   pointer-events: none;
   display: block;
@@ -133,9 +136,33 @@ html[data-night="1"] .hl {
 .meadow[data-supported="0"] ~ .clock {
   display: none;
 }
-/* Narrow screens: the text column runs to the bottom, so no clock */
+/* Phones: no scene, no effects. Black page, white text, plain links. */
 @media (max-width: 760px) {
-  .clock {
+  html, body {
+    background-color: #000;
+    color: #fff;
+  }
+  .hl {
+    background: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    -webkit-box-decoration-break: slice;
+    box-decoration-break: slice;
+  }
+  .lnk {
+    background-image: none;
+    transition: none;
+    text-decoration-color: rgba(255, 255, 255, 0.5);
+  }
+  .lnk:hover {
+    text-decoration-color: #fff;
+  }
+  ::selection {
+    background-color: rgba(255, 255, 255, 0.25);
+    color: #fff;
+  }
+  .meadow, .sky-handle, .clock {
     display: none;
   }
 }

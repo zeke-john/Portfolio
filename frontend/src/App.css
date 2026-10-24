@@ -58,9 +58,13 @@ html[data-night="1"] .hl {
 /* ---------------------------------------------------------- the meadow ---- */
 .meadow {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 100%;
+  /* the large viewport: on iPhone Safari this reaches under the translucent
+     toolbar, so the painting shows through it instead of a bare strip */
+  height: 100vh;
+  height: 100lvh;
   z-index: 0;
   pointer-events: none;
   display: block;
@@ -135,11 +139,7 @@ html[data-night="1"] .hl {
     display: none;
   }
 }
-/* Still painting on phones: nothing to grab, nothing ticking */
-html[data-static="1"] .sky-handle,
-html[data-static="1"] .clock {
-  display: none;
-}
+
 
 @media (prefers-reduced-motion: reduce) {
   .meadow { transition: none; }

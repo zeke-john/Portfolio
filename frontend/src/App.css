@@ -137,7 +137,7 @@ html[data-night="1"] .hl {
   display: none;
 }
 /* Phones: no scene, no effects. Black page, white text, plain links. */
-@media (max-width: 760px) {
+@media (max-width: 650px) {
   html, body {
     background-color: #000;
     color: #fff;

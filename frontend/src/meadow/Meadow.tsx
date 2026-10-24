@@ -94,12 +94,19 @@ function inkFor(night: number) {
 
 type Body = "sun" | "moon";
 
-const PHONE = "(max-width: 760px)";
+const PHONE = "(max-width: 650px)";
 
 export default function Meadow() {
   // Phones get a plain page: black background, white text, no scene at all.
-  // Decided once at mount; a phone doesn't become a laptop mid-visit.
-  const [phone] = useState(() => matchMedia(PHONE).matches);
+  // Follows the media query live, so a desktop window dragged narrow and back
+  // gets the scene back.
+  const [phone, setPhone] = useState(() => matchMedia(PHONE).matches);
+  useEffect(() => {
+    const mq = matchMedia(PHONE);
+    const onChange = () => setPhone(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sunRef = useRef<HTMLDivElement>(null);
   const moonRef = useRef<HTMLDivElement>(null);
@@ -232,7 +239,9 @@ export default function Meadow() {
       gl.uniform2f(us.res, canvas.width, canvas.height);
       gl.useProgram(splat);
       gl.uniform1f(up.aspect, aspect);
+      if (started) render(performance.now());
     };
+    let started = false;
 
     // ------------------------------------------------------------ orbit ----
     let phase = hoursToPhase(localHoursNow());
@@ -336,6 +345,12 @@ export default function Meadow() {
       // 30fps when idle keeps laptops cool; full rate while dragging or painting
       const busy = dragging !== null || ptr.moved;
       if (!busy && now - lastFrame < 33) return;
+      render(now);
+    };
+    // Resizing a canvas wipes it, so resize() calls this straight away rather
+    // than waiting for the next scheduled frame; otherwise the page background
+    // shows through for a frame.
+    const render = (now: number) => {
       const dt = Math.min(0.1, (now - lastTick) / 1000);
       lastFrame = now;
       lastTick = now;
@@ -399,6 +414,7 @@ export default function Meadow() {
     };
 
     resize();
+    started = true;
     window.addEventListener("resize", resize);
     raf = requestAnimationFrame(frame);
     canvas.dataset.ready = "1";

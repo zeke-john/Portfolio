@@ -38,6 +38,18 @@ html[data-night="1"] .lnk {
   display: flex;
   flex-direction: column;
 }
+/* The text layer sits above the sun and moon, but only the words themselves
+   catch the pointer; the empty column around them lets you grab the sky */
+.page main,
+.page main > div,
+.page main ul {
+  pointer-events: none;
+}
+.page main p,
+.page main li,
+.page main .clock {
+  pointer-events: auto;
+}
 
 /* Every line of text sits on its own painted strip of paper, cloned per line
    like a highlighter stroke, so the words always sit in front of the scene */

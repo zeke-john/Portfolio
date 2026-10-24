@@ -15,7 +15,6 @@ function ageOn(today: Date) {
 
 function App() {
   const age = ageOn(new Date());
-  useSelectionFlag();
   return (
     <div className="page">
       <Meadow />
@@ -93,19 +92,6 @@ function App() {
       </main>
     </div>
   );
-}
-
-// Marks the page while any text is selected, so link hover effects can stand down.
-function useSelectionFlag() {
-  useEffect(() => {
-    const update = () => {
-      const sel = document.getSelection();
-      document.documentElement.dataset.selecting =
-        sel && !sel.isCollapsed ? "1" : "0";
-    };
-    document.addEventListener("selectionchange", update);
-    return () => document.removeEventListener("selectionchange", update);
-  }, []);
 }
 
 const EMAIL = "zekejohn118@gmail.com";

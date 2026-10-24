@@ -14,29 +14,21 @@ h1 {
   font-weight: inherit;
 }
 
-/* Links: underline, and on hover a translucent highlighter stroke sweeps in
-   behind the words */
+/* Links: a soft underline that turns solid ink on hover */
 .lnk {
   text-decoration: underline;
   text-underline-offset: 3px;
   text-decoration-color: color-mix(in srgb, var(--ink) 40%, transparent);
-  background-image: linear-gradient(var(--brush), var(--brush));
-  background-repeat: no-repeat;
-  background-position: 0 58%;
-  background-size: 0% 0.95em;
-  transition: background-size 160ms ease-out;
-  --brush: rgba(255, 240, 90, 0.5);
+  transition: text-decoration-color 160ms ease-out;
 }
 .lnk:hover {
   text-decoration-color: var(--ink);
-  background-size: 100% 0.95em;
-}
-/* While text is selected, the hover sweep stays off so the two don't fight */
-html[data-selecting="1"] .lnk:hover {
-  background-size: 0% 0.95em;
 }
 html[data-night="1"] .lnk {
-  --brush: rgba(255, 240, 90, 0.34);
+  text-decoration-color: rgba(244, 242, 234, 0.45);
+}
+html[data-night="1"] .lnk:hover {
+  text-decoration-color: var(--ink);
 }
 
 .page {
@@ -185,13 +177,18 @@ html[data-night="1"] .hl {
   .mobile-meadow {
     display: block;
     position: fixed;
-    inset: 0;
+    inset: 0 0 auto;
     z-index: 0;
     pointer-events: none;
+    /* The large viewport reaches behind Safari's expanded bottom toolbar. */
+    height: 100vh;
+    height: 100lvh;
     background: url("/meadow-mobile.webp") center / cover no-repeat;
   }
   .meadow {
     z-index: 1;
+    height: 100vh;
+    height: 100lvh;
   }
   .meadow[data-supported="0"] {
     opacity: 0;

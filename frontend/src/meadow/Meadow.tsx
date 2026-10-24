@@ -272,15 +272,22 @@ export default function Meadow() {
       el.style.transform = `translate(${p.x * w}px, ${(1 - screenY(p.y, portrait)) * h}px)`;
     };
 
+    const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     const applyNight = (() => {
       let last = -1;
       return (night: number) => {
         if (Math.abs(night - last) < 0.005) return;
         last = night;
         const root = document.documentElement;
+        const nightMode = night > NIGHT_THRESHOLD ? "1" : "0";
         root.style.setProperty("--ink", inkFor(night));
         root.style.setProperty("--night", night.toFixed(3));
-        root.dataset.night = night > NIGHT_THRESHOLD ? "1" : "0";
+        if (root.dataset.night !== nightMode) {
+          root.dataset.night = nightMode;
+          // Safari uses this for the areas around its toolbar. Keeping it in
+          // sync avoids a cream-colored band around an otherwise dark scene.
+          themeColor?.setAttribute("content", nightMode === "1" ? "#0b1022" : "#e9e6dc");
+        }
       };
     })();
     let lastClock = "";

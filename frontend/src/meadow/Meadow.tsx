@@ -13,7 +13,7 @@ const HORIZON = 0.46;
 const DAY_SECONDS = 300; // one full cycle of the clock
 const TIME_ZONE = "America/Los_Angeles";
 // A rain spell every few minutes, fading in and out over several seconds.
-const RAIN_PERIOD = 100, RAIN_START = 10, RAIN_LENGTH = 35, RAIN_RAMP = 8;
+const RAIN_PERIOD = 100, RAIN_START = 15, RAIN_LENGTH = 35, RAIN_RAMP = 8;
 function rainAt(seconds: number) {
   const c = seconds % RAIN_PERIOD;
   const on = smoothstep(RAIN_START, RAIN_START + RAIN_RAMP, c);
@@ -180,7 +180,7 @@ export default function Meadow() {
     const up = {
       prev: loc(splat, "uPrev"), a: loc(splat, "uA"), b: loc(splat, "uB"), vel: loc(splat, "uVel"),
       aspect: loc(splat, "uAspect"), radius: loc(splat, "uRadius"), active: loc(splat, "uActive"),
-      decay: loc(splat, "uDecay"),
+      stamp: loc(splat, "uStamp"), decay: loc(splat, "uDecay"),
     };
     gl.useProgram(scene);
     gl.uniform1f(us.seed, 3.7);
@@ -433,17 +433,21 @@ export default function Meadow() {
       gl.useProgram(splat);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, targets[readIdx].tex);
-      const active = ptr.has && ptr.moved;
+      // A resting pointer keeps the spot under it wet, so the grass stays
+      // pressed and the paint stays fresh, but writes no new velocity: the
+      // spot keeps whatever stroke last went through it.
+      const active = ptr.has;
       if (active) {
-        const vx = clamp((ptr.x - ptr.px) * 80, -1, 1);
-        const vy = clamp((ptr.y - ptr.py) * 80, -1, 1);
         gl.uniform2f(up.a, ptr.px, ptr.py);
         gl.uniform2f(up.b, ptr.x, ptr.y);
-        gl.uniform2f(up.vel, vx, vy);
+        if (ptr.moved) {
+          gl.uniform2f(up.vel, clamp((ptr.x - ptr.px) * 80, -1, 1), clamp((ptr.y - ptr.py) * 80, -1, 1));
+        }
       }
       gl.uniform1f(up.active, active ? 1 : 0);
-      gl.uniform1f(up.radius, 0.06);
-      gl.uniform1f(up.decay, Math.pow(0.45, dt)); // wet for a couple of seconds // wet for a couple of seconds
+      gl.uniform1f(up.stamp, ptr.moved ? 1 : 0);
+      gl.uniform1f(up.radius, 0.11);
+      gl.uniform1f(up.decay, Math.pow(0.55, dt)); // wet for a few seconds
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       ptr.px = ptr.x; ptr.py = ptr.y; ptr.moved = false;
       readIdx = 1 - readIdx;

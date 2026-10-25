@@ -18,7 +18,7 @@ function App() {
   return (
     <div className="page">
       <Meadow />
-      <main className="relative z-10 shrink-0 flex justify-center px-7 pt-[18vh] pb-24 scene:px-6 scene:pt-[20vh]">
+      <main className="relative z-10 flex-1 flex items-center justify-center px-7 pt-10 pb-16 scene:px-6">
         <div className="max-w-[760px] w-full space-y-8 text-[24px] leading-relaxed">
           <h1>
             <span className="hl">
@@ -38,29 +38,32 @@ function App() {
             <span className="hl">some things i've built:</span>
           </p>
 
-          <ul className="list-disc pl-6 space-y-1.5 !mt-2">
+          <ul className="built space-y-2 !mt-2">
             <li>
+              <Dot i={0} />
               <span className="hl">
                 <A href="https://www.figma.com/community/plugin/1566412604365451941/buddaai-ai-design-partner">
                   Budda AI
                 </A>
-                <span className="inline-block mx-[8px]">~</span>an agentic ai
-                design tool for figma w/ their native tooling, got around 8
-                paying users and learned a lot about designer workflows.
+                <Sep />an agentic ai design tool for figma w/ their native
+                tooling, got around 8 paying users and learned a lot about
+                designer workflows.
               </span>
             </li>
             <li>
+              <Dot i={1} />
               <span className="hl">
                 <A href="https://sumanyai.com">Sumany AI</A>
-                <span className="inline-block mx-[8px]">~</span>lets you
-                summarize documents using open weight transformer models (before
-                chatgpt in '22), my first project that i got paying users for.
+                <Sep />lets you summarize documents using open weight
+                transformer models (before chatgpt in '22), my first project
+                that i got paying users for.
               </span>
             </li>
             <li>
+              <Dot i={2} />
               <span className="hl">
-                A few open source projects that i'm proud of
-                <span className="inline-block mx-[8px]">~</span>
+                a few open source projects that i'm proud of
+                <Sep />
                 <A href="https://github.com/zeke-john/codecall">
                   codecall
                 </A>, <A href="https://github.com/zeke-john/rune">rune</A>,{" "}
@@ -86,6 +89,13 @@ function App() {
                 linkedin
               </A>
               , or via <EmailLink />.
+            </span>
+          </p>
+
+          <p className="ps">
+            <span className="hl">
+              p.s. you can drag the <span className="by-day">sun</span>
+              <span className="by-night">moon</span>.
             </span>
           </p>
         </div>
@@ -133,6 +143,26 @@ function EmailLink() {
       </span>
     </span>
   );
+}
+
+// List furniture, kept quiet so the project names lead: a small painted dot
+// beside each item, out on the painting rather than on the paper, drawn three
+// slightly different ways so they don't look stamped, and a tilde between a
+// name and what it is.
+const DOTS = [
+  "M5.4.9C7.8.8 9.3 2.6 9 5 8.7 7.5 7.3 9.3 4.8 9.1 2.4 8.9.8 7.4 1 4.9c.2-2.3 2-3.9 4.4-4Z",
+  "M4.6 1.3C6.9.6 9.4 2.3 9.1 4.7 8.8 7 7.5 9.4 5 9 2.6 8.6.6 7.3 1 4.8c.3-2 1.7-3 3.6-3.5Z",
+  "M5 .7c2.4.5 4.3 2.4 3.8 4.8-.4 2.1-2 3.2-4.2 3.5C2.3 9.3 1.1 7 .9 4.7.7 2.3 2.9.3 5 .7Z",
+];
+function Dot({ i }: { i: number }) {
+  return (
+    <svg className="dot" viewBox="0 0 10 10" aria-hidden="true">
+      <path d={DOTS[i % DOTS.length]} />
+    </svg>
+  );
+}
+function Sep() {
+  return <span className="sep" aria-hidden="true">~</span>;
 }
 
 function A({ href, children }: { href: string; children: React.ReactNode }) {

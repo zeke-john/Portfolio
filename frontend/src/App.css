@@ -73,6 +73,44 @@ html[data-night="1"] .hl {
   box-shadow: none;
 }
 
+/* Things built: each item carries a small painted dot out on the painting,
+   beside its paper strip, in the page ink. */
+.built {
+  list-style: none;
+  padding-left: 0;
+}
+.built li {
+  position: relative;
+  padding-left: 1.1em;
+}
+.dot {
+  position: absolute;
+  left: 0.04em;
+  top: 0.6em;
+  width: 0.46em;
+  height: 0.46em;
+  fill: var(--ink);
+  opacity: 0.85;
+  pointer-events: none;
+}
+.sep {
+  margin: 0 0.4em;
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
+}
+
+/* The one hint that the sky is interactive, written in the page's own voice.
+   It names whichever body is up, and goes away when there's no painting. */
+.ps {
+  font-style: italic;
+  font-size: 0.9em;
+}
+.by-night { display: none; }
+html[data-night="1"] .by-day { display: none; }
+html[data-night="1"] .by-night { display: inline; }
+.meadow[data-supported="0"] ~ main .ps {
+  display: none;
+}
+
 /* ---------------------------------------------------------- the meadow ---- */
 .meadow {
   position: fixed;

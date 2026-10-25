@@ -13,7 +13,9 @@ void main() {
 
 // Wet-paint pointer trail. A small RGBA texture holds, per pixel, the last
 // pointer velocity (rg, encoded 0..1) and how wet that spot still is (b).
-// Each frame decays it and splats a capsule along the pointer's last move.
+// Each frame the wetness dries a little and a capsule is splatted along the
+// pointer's last move. The stroke direction is kept until painted over, so a
+// resting pointer holds its last stroke instead of letting it fade.
 export const SPLAT_FRAG = `
 precision mediump float;
 varying vec2 vUv;
@@ -24,11 +26,12 @@ uniform vec2  uVel;
 uniform float uAspect;
 uniform float uRadius;
 uniform float uActive;
+uniform float uStamp;   // 1 when the pointer moved this frame, 0 when resting
 uniform float uDecay;
 
 void main() {
   vec4 prev = texture2D(uPrev, vUv);
-  vec2 vel = (prev.rg - 0.5) * 2.0 * uDecay;
+  vec2 vel = (prev.rg - 0.5) * 2.0;
   float amt = max(0.0, prev.b * uDecay - 0.004);
   if (uActive > 0.5) {
     vec2 p = vec2(vUv.x * uAspect, vUv.y);
@@ -38,7 +41,7 @@ void main() {
     float t = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);
     float d = length(p - (a + ab * t));
     float sp = exp(-(d * d) / (uRadius * uRadius));
-    vel = mix(vel, uVel, sp);
+    vel = mix(vel, uVel, sp * uStamp);
     amt = max(amt, sp);
   }
   gl_FragColor = vec4(vel * 0.5 + 0.5, amt, 1.0);
@@ -68,6 +71,13 @@ float yMap(float y) {
   if (uKnee <= 0.0) return y;
   float H = 0.46;
   return y < uKnee ? y * (H / uKnee) : H + (y - uKnee) * ((1.0 - H) / (1.0 - uKnee));
+}
+
+// Screen y for a scene y: the inverse of yMap, so round things stay round.
+float yUnmap(float sy) {
+  if (uKnee <= 0.0) return sy;
+  float H = 0.46;
+  return sy < H ? sy * (uKnee / H) : uKnee + (sy - H) * ((1.0 - uKnee) / (1.0 - H));
 }
 
 // ---------------------------------------------------------------- noise ----
@@ -126,6 +136,26 @@ vec2 brush(vec2 p, vec2 dir, float scale, float amp, float s) {
   float n2 = noise(q + s + vec2(7.3, 2.1));
   return p + (vec2(n1, n2) - 0.5) * amp;
 }
+// Round, overlapping paint dabs, like foliage laid in with the side of the
+// brush. Each cell holds one soft blob with its own value, jittered so no
+// grid shows. Returns (value 0..1, coverage).
+vec2 dabs(vec2 p, vec2 scale, float s) {
+  vec2 q = p * scale;
+  vec2 id = floor(q);
+  vec2 f = fract(q);
+  float cov = 0.0;
+  float val = 0.5;
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 o = vec2(float(i), float(j));
+      vec2 c = o + 0.1 + 0.8 * vec2(hash(id + o + s), hash(id + o + s + 7.0));
+      float r = 0.6 + 0.35 * hash(id + o + s + 3.0);
+      float m = smoothstep(1.0, 0.72, length(f - c) / r);
+      if (m > cov) { cov = m; val = hash(id + o + s + 11.0); }
+    }
+  }
+  return vec2(val, cov);
+}
 
 // One depth layer of grass: rows of short tapered blades, each row's blades
 // overlapping the row above, like a lawn seen from low down. Only blades whose
@@ -160,14 +190,17 @@ float dabsWet(vec2 p, vec2 dir, float s) { return dashes(p, dir, 90.0, s + 4.0);
 
 // One painted hill layer. h is the ridge height at this column, slope its
 // derivative. Colour runs from 'top' at the ridge to 'base' lower down,
-// strokes follow the slope, the lit side faces the sun.
-vec3 hill(vec2 p, float h, float slope, vec3 top, vec3 base, float lightX, float s, float scale) {
+// strokes follow the slope, the lit side faces the sun. amp is how much the
+// strokes show: each one shifts the value and leans warm or cool.
+vec3 hill(vec2 p, float h, float slope, vec3 top, vec3 base, float lightX, float s, float scale, float amp) {
   float down = clamp((h - p.y) * 5.0, 0.0, 1.0);
   vec3 c = mix(top, base, down);
   float lit = 0.5 + 0.5 * clamp(lightX * slope * 30.0, -1.0, 1.0);
   c *= 0.82 + 0.36 * lit;
   vec2 dir = normalize(vec2(1.0, slope * 0.7));
-  c *= 1.0 + (paint(p, dir, scale, s) - 0.5) * 0.3;
+  float pt = paint(p, dir, scale, s) - 0.5;
+  c *= 1.0 + pt * amp;
+  c += pt * vec3(0.05, 0.03, -0.03) * amp;
   return c;
 }
 
@@ -180,9 +213,9 @@ void main() {
   vec2 wetVel = (flow.rg - 0.5) * 2.0;
   float wet = flow.b;
   float speed = length(wetVel);
-  vec2 wetDir = wetVel / max(speed, 0.02);
+  vec2 wetDir = speed > 0.02 ? wetVel / speed : vec2(1.0, 0.0);
   float wetPush = wet * smoothstep(0.0, 0.25, speed);
-  vec2 suv = vUv - wetDir * wetPush * 0.05;
+  vec2 suv = vUv - wetDir * wetPush * 0.012;
   vec2 uv = vec2(suv.x, yMap(suv.y));
   vec2 p = vec2(uv.x * aspect, uv.y);
 
@@ -197,8 +230,9 @@ void main() {
   float lightX = toLight.x;
 
   // ----------------------------------------------------------- palette ----
-  vec3 skyTopDay   = vec3(0.64, 0.73, 0.81);
-  vec3 skyHorDay   = vec3(0.94, 0.91, 0.82);
+  vec3 skyTopDay   = vec3(0.62, 0.72, 0.82);
+  vec3 skyMidDay   = vec3(0.79, 0.77, 0.85);
+  vec3 skyHorDay   = vec3(0.95, 0.89, 0.80);
   vec3 skyTopNight = vec3(0.05, 0.07, 0.17);
   vec3 skyHorNight = vec3(0.12, 0.16, 0.30);
   vec3 duskWarm    = vec3(1.00, 0.64, 0.34);
@@ -216,32 +250,45 @@ void main() {
   vec2 tang = normalize(vec2(-toSun.y, toSun.x) + 0.0001);
   float nearSun = smoothstep(0.5, 0.05, dS);
 
-  vec2 ps = brush(p, vec2(1.0, 0.08), 9.0, 0.03, seed);
+  vec2 ps = brush(p, vec2(1.0, 0.08), 7.0, 0.045, seed);
   float skyT = smoothstep(0.30, 1.0, ps.y);
   vec3 sky = mix(skyHor, skyTop, skyT);
+  // a lavender band through the middle of the day sky
+  sky = mix(sky, skyMidDay, exp(-pow((skyT - 0.4) * 3.0, 2.0)) * 0.45 * day * (1.0 - rain * 0.7));
 
-  // clouds: soft masses, heavier in rain
-  float cl = fbm(vec2(ps.x * 1.4 + uTime * 0.012, ps.y * 3.2) + seed);
+  // clouds: soft masses, heavier in rain, lit on the side facing the sun with
+  // a cooler shadow underneath, and broken into dabs along their edges
+  if (ps.y > 0.40) {
+  vec2 cq = vec2(ps.x * 1.4 + uTime * 0.012, ps.y * 3.2) + seed;
+  float cl = fbm(cq);
   float cl2 = fbm(vec2(ps.x * 3.6 - uTime * 0.02, ps.y * 7.0) + seed * 2.0);
   float cloud = smoothstep(0.50 - rain * 0.12, 0.72, cl * 0.7 + cl2 * 0.3) * smoothstep(0.42, 0.6, ps.y);
-  vec3 cloudCol = mix(vec3(0.98, 0.97, 0.94), vec3(0.11, 0.13, 0.23), night);
-  cloudCol = mix(cloudCol, vec3(0.62, 0.64, 0.66), rain * 0.7 * day);
-  cloudCol = mix(cloudCol, duskWarm, uDusk * 0.35);
-  sky = mix(sky, cloudCol, cloud * 0.7);
+  cloud *= 0.75 + 0.5 * smoothstep(0.35, 0.65, paint(ps, vec2(1.0, 0.0), 45.0, seed + 40.0));
+  float clLit = fbm(cq + vec2(toLight.x * 0.05, 0.10));
+  float litSide = clamp(0.5 + (cl - clLit) * 7.0, 0.0, 1.0);
+  vec3 cloudLight = mix(vec3(0.99, 0.98, 0.95), vec3(0.13, 0.15, 0.26), night);
+  vec3 cloudShade = mix(vec3(0.76, 0.75, 0.80), vec3(0.08, 0.10, 0.19), night);
+  vec3 cloudCol = mix(cloudShade, cloudLight, litSide);
+  cloudCol = mix(cloudCol, vec3(0.60, 0.62, 0.65), rain * 0.7 * day);
+  cloudCol = mix(cloudCol, duskWarm, uDusk * 0.35 * litSide);
+  sky = mix(sky, cloudCol, cloud * 0.75);
+  }
 
-  // sky strokes: horizontal dashes that wrap into rings around the sun
+  // sky strokes: horizontal dashes that wrap into rings around the sun, each
+  // leaning a touch warm or cool
   vec2 skyDir = normalize(mix(vec2(1.0, 0.05), tang, nearSun * day));
-  float skyPaint = paint(p, skyDir, 170.0, seed);
-  sky *= 1.0 + (skyPaint - 0.5) * 0.12;
+  float skyPaint = paint(p, skyDir, 120.0, seed);
+  sky *= 1.0 + (skyPaint - 0.5) * 0.20;
+  sky += (skyPaint - 0.5) * vec3(0.05, 0.02, -0.05) * day * (1.0 - rain);
   sky += (hash(floor(p * 90.0) + seed) - 0.5) * 0.02 * vec3(1.0, 0.85, 0.6);
 
   // sun glow: a hot white core that fades into warm rings
   float hoverS = 1.0 + 0.35 * uSunHover;
   float swirl = noise(vec2(ang * 4.0 + dS * 6.0, dS * 18.0 - uTime * 0.08) + seed);
   float halo = exp(-dS * 3.4 / hoverS) * (0.75 + 0.5 * swirl);
-  float halo2 = exp(-dS * 1.4 / hoverS) * (1.0 + 0.4 * uSunHover);
+  float halo2 = exp(-dS * 1.8 / hoverS) * (1.0 + 0.4 * uSunHover);
   vec3 glowCol = mix(vec3(1.0, 0.99, 0.94), duskWarm, uDusk * 0.6);
-  float glowAmt = clamp(halo * 0.9 + halo2 * 0.45, 0.0, 1.0) * day * (1.0 - rain * 0.75);
+  float glowAmt = clamp(halo * 0.9 + halo2 * 0.38, 0.0, 1.0) * day * (1.0 - rain * 0.75);
   sky = mix(sky, glowCol, glowAmt);
 
   // moon glow
@@ -263,6 +310,13 @@ void main() {
   float star2 = step(0.985, sh2) * smoothstep(0.3, 0.0, length(sf2)) * (0.7 + 0.3 * sin(uTime * 1.3 + sh2 * 50.0));
   sky += vec3(1.0, 0.98, 0.92) * (star * 0.9 + star2 * 1.2) * night * skyMaskY * (1.0 - rain);
 
+  // a faint milky way: a soft band of lighter paint across the night sky
+  if (night > 0.001 && p.y > 0.40) {
+    float band = exp(-pow((p.y - (0.98 - p.x * 0.2)) * 7.0, 2.0));
+    float mw = fbm(vec2(p.x * 2.2 + p.y * 0.6, p.y * 5.0 - p.x) + seed + 20.0);
+    sky += vec3(0.30, 0.34, 0.50) * band * smoothstep(0.35, 0.8, mw) * 0.16 * night * skyMaskY * (1.0 - rain);
+  }
+
   // shooting stars: one every few seconds, a bright head with a fading tail
   {
     float interval = 6.5;
@@ -281,30 +335,48 @@ void main() {
     sky += vec3(1.0, 0.97, 0.9) * streak * night * (1.0 - rain);
   }
 
-  // sun and moon discs, same size, brushed edges
-  vec2 pd = brush(p, vec2(1.0, 0.3), 30.0, 0.012, seed + 3.0);
+  // sun and moon: round discs, measured in screen space so they stay round on
+  // portrait screens. The paint is in the edge: each horizontal row of the rim
+  // sits a little further in or out, more at the sides than the top, as if the
+  // disc had been brushed sideways while wet.
+  vec2 pScr = vec2(suv.x * aspect, suv.y);
+  vec2 sunScr = vec2(uSun.x * aspect, yUnmap(uSun.y));
+  vec2 moonScr = vec2(uMoon.x * aspect, yUnmap(uMoon.y));
   float discR = 0.052;
-  float dDisc = length(pd - sunP);
-  float sunR = discR * (1.0 + 0.08 * uSunHover);
-  float disc = smoothstep(sunR, sunR - 0.006, dDisc);
-  float sunPaint = paint(pd - sunP, tang, 300.0, seed + 7.0);
-  vec3 sunCol = mix(vec3(0.97, 0.70, 0.14), vec3(1.0, 0.86, 0.40), smoothstep(0.0, sunR, sunR - dDisc) * 0.7 + 0.3 * sunPaint);
-  sunCol *= 1.0 + (sunPaint - 0.5) * 0.22;
-  sunCol = mix(sunCol, vec3(0.98, 0.5, 0.2), uDusk * 0.5);
-  float rim = smoothstep(sunR - 0.012, sunR, dDisc) * disc;
-  sunCol = mix(sunCol, vec3(0.93, 0.56, 0.12), rim * 0.8);
-  sky = mix(sky, sunCol, disc * day * (1.0 - rain * 0.5));
 
-  float moonR = discR * (1.0 + 0.08 * uMoonHover);
-  float dMd = length(pd - moonP);
-  float mdisc = smoothstep(moonR, moonR - 0.005, dMd);
-  float seas = fbm((pd - moonP) * 28.0 + seed * 5.0);
-  float crater = smoothstep(0.55, 0.75, seas);
-  vec3 moonCol = mix(vec3(0.96, 0.96, 0.90), vec3(0.72, 0.74, 0.70), crater * 0.8);
-  moonCol *= 1.0 + (paint(pd - moonP, vec2(1.0, 0.0), 260.0, seed + 8.0) - 0.5) * 0.25;
-  float mrim = smoothstep(moonR - 0.01, moonR, dMd) * mdisc;
-  moonCol = mix(moonCol, vec3(0.80, 0.82, 0.78), mrim * 0.6);
-  sky = mix(sky, moonCol, mdisc * moonAmt);
+  vec2 relS = pScr - sunScr;
+  float dDisc = length(relS);
+  float sideS = abs(relS.x) / max(dDisc, 1e-4);
+  float sideSeedS = step(0.0, relS.x) * 13.0;
+  float edgeS = (noise(vec2(relS.y * 170.0, seed + 7.0 + sideSeedS)) - 0.5) * 0.0035 * (0.25 + 0.75 * sideS)
+              + (noise(vec2(relS.y * 55.0, seed + 8.0 + sideSeedS)) - 0.5) * 0.002;
+  float sunR = discR * (1.0 + 0.08 * uSunHover) + edgeS;
+  float disc = smoothstep(sunR, sunR - 0.006, dDisc);
+  float sunFringe = smoothstep(sunR + 0.014, sunR - 0.002, dDisc) * (1.0 - disc) * (0.35 + 0.65 * sideS);
+  float sunPaint = paint(relS, vec2(1.0, 0.0), 220.0, seed + 7.0);
+  vec3 sunCore = mix(vec3(0.99, 0.78, 0.28), vec3(1.0, 0.92, 0.56), smoothstep(sunR, 0.0, dDisc) * 0.6);
+  sunCore *= 1.0 + (sunPaint - 0.5) * 0.10;
+  sunCore = mix(sunCore, vec3(0.98, 0.52, 0.22), uDusk * 0.5);
+  sunCore = mix(sunCore, sunCore * vec3(0.94, 0.86, 0.80), smoothstep(sunR - 0.014, sunR, dDisc) * 0.6);
+  float sunA = max(disc, sunFringe * 0.3);
+  sky = mix(sky, sunCore, sunA * day * (1.0 - rain * 0.5));
+
+  vec2 relM = pScr - moonScr;
+  float dMd = length(relM);
+  float sideM = abs(relM.x) / max(dMd, 1e-4);
+  float sideSeedM = step(0.0, relM.x) * 13.0;
+  float edgeM = (noise(vec2(relM.y * 170.0, seed + 9.0 + sideSeedM)) - 0.5) * 0.0035 * (0.25 + 0.75 * sideM)
+              + (noise(vec2(relM.y * 55.0, seed + 10.0 + sideSeedM)) - 0.5) * 0.002;
+  float moonR = discR * (1.0 + 0.08 * uMoonHover) + edgeM;
+  float mdisc = smoothstep(moonR, moonR - 0.006, dMd);
+  float moonFringe = smoothstep(moonR + 0.014, moonR - 0.002, dMd) * (1.0 - mdisc) * (0.35 + 0.65 * sideM);
+  float seas = fbm(relM * 28.0 + seed * 5.0);
+  float crater = smoothstep(0.55, 0.78, seas);
+  vec3 moonCore = mix(vec3(0.97, 0.97, 0.93), vec3(0.82, 0.84, 0.82), crater * 0.5);
+  moonCore *= 1.0 + (paint(relM, vec2(1.0, 0.0), 220.0, seed + 8.0) - 0.5) * 0.10;
+  moonCore = mix(moonCore, moonCore * vec3(0.90, 0.92, 0.94), smoothstep(moonR - 0.012, moonR, dMd) * 0.5);
+  float moonA = max(mdisc, moonFringe * 0.3);
+  sky = mix(sky, moonCore, moonA * moonAmt);
 
   // birds by day: three little painted Vs gliding across
   float land = 0.0;
@@ -328,66 +400,100 @@ void main() {
   vec3 nightLand = vec3(0.07, 0.11, 0.14);
   float rainDim = 1.0 - rain * 0.25;
 
-  // far ridge: low on the left, one big dark hill on the right
+  // far ridge: low on the left, one big dark hill on the right, laid in with
+  // round dabs like distant trees
   vec2 pg = brush(p, vec2(1.0, 0.0), 40.0, 0.006, seed + 11.0);
   float bigHill = smoothstep(0.50, 1.0, uv.x) * (0.9 + 0.3 * ridge(pg.x * 0.8 + 2.0, seed + 5.0));
   float h1 = 0.44 + 0.08 * ridge(pg.x * 1.1, seed + 1.0) + 0.04 * ridge(pg.x * 3.3, seed + 8.0) + 0.26 * bigHill;
   float h1d = (ridge(pg.x * 1.1 + 0.01, seed + 1.0) - ridge(pg.x * 1.1 - 0.01, seed + 1.0)) * 8.0
             + 0.26 * (smoothstep(0.50, 1.0, uv.x + 0.004) - smoothstep(0.50, 1.0, uv.x - 0.004)) * 125.0;
-  vec3 farTop = mix(vec3(0.46, 0.58, 0.50), vec3(0.30, 0.44, 0.40), bigHill);
-  vec3 farBase = mix(vec3(0.30, 0.44, 0.42), vec3(0.12, 0.25, 0.26), bigHill);
-  vec3 far = hill(pg, h1, h1d * 0.1, farTop, farBase, lightX, seed + 1.0, 150.0);
-  far = mix(far, haze, (0.5 - 0.38 * bigHill) * day + 0.12 + 0.12 * uDusk);
-  far = mix(far, nightLand, night * 0.85);
   float m1 = smoothstep(h1 + 0.005, h1 - 0.005, pg.y + (noise(pg * vec2(80.0, 10.0)) - 0.5) * 0.006);
-  col = mix(col, far * rainDim, m1);
+  if (m1 > 0.001) {
+    vec3 farTop = mix(vec3(0.46, 0.58, 0.52), vec3(0.27, 0.43, 0.42), bigHill);
+    vec3 farBase = mix(vec3(0.30, 0.44, 0.44), vec3(0.10, 0.22, 0.26), bigHill);
+    vec3 far = hill(pg, h1, h1d * 0.1, farTop, farBase, lightX, seed + 1.0, 150.0, 0.26);
+    vec2 fd = dabs(pg, vec2(48.0, 80.0), seed + 13.0);
+    far *= 1.0 + (fd.x - 0.5) * 0.34 * (0.3 + 0.7 * bigHill);
+    far *= 1.0 - (1.0 - fd.y) * 0.16 * bigHill;
+    far = mix(far, haze, (0.5 - 0.38 * bigHill) * day + 0.12 + 0.12 * uDusk);
+    far = mix(far, nightLand, night * 0.85);
+    col = mix(col, far * rainDim, m1);
+  }
   land = max(land, m1);
 
-  // rolling mid hills, taller on the left
+  // rolling mid hills, taller on the left, with darker clumps of trees on the
+  // slopes and a broken tree line along the ridge
   vec2 pm = brush(p, vec2(1.0, 0.15), 40.0, 0.007, seed + 23.0);
   float h2 = 0.37 + 0.12 * ridge(pm.x * 1.5 + 4.0, seed + 2.0) * (1.25 - 0.6 * uv.x);
   float h2d = (ridge(pm.x * 1.5 + 4.01, seed + 2.0) - ridge(pm.x * 1.5 + 3.99, seed + 2.0)) * 60.0 * 0.12;
-  vec3 mid = hill(pm, h2, h2d, vec3(0.60, 0.72, 0.42), vec3(0.36, 0.53, 0.30), lightX, seed + 2.0, 190.0);
-  mid = mix(mid, haze, 0.22 * day + 0.1 * uDusk);
-  mid = mix(mid, nightLand, night * 0.85);
-  float m2 = smoothstep(h2 + 0.004, h2 - 0.004, pm.y + (noise(pm * vec2(90.0, 10.0)) - 0.5) * 0.006);
-  col = mix(col, mid * rainDim, m2);
+  float treeN = noise(vec2(pm.x * 70.0, seed + 1.0)) * 0.6 + noise(vec2(pm.x * 190.0, seed + 2.0)) * 0.4;
+  float treeHere = smoothstep(0.40, 0.55, noise(vec2(pm.x * 7.0, seed + 9.0)));
+  float h2t = h2 + treeN * 0.018 * treeHere;
+  float m2 = smoothstep(h2t + 0.003, h2t - 0.003, pm.y + (noise(pm * vec2(90.0, 10.0)) - 0.5) * 0.006);
+  if (m2 > 0.001) {
+    vec3 mid = hill(pm, h2, h2d, vec3(0.60, 0.72, 0.42), vec3(0.36, 0.53, 0.30), lightX, seed + 2.0, 190.0, 0.32);
+    vec2 md = dabs(pm, vec2(70.0, 110.0), seed + 17.0);
+    float clumps = smoothstep(0.52, 0.68, fbm(pm * vec2(5.0, 12.0) + seed + 3.0));
+    mid = mix(mid, mid * vec3(0.72, 0.80, 0.70) * (0.9 + 0.3 * md.x), clumps * 0.6);
+    mid = mix(mid, haze, 0.22 * day + 0.1 * uDusk);
+    mid = mix(mid, nightLand, night * 0.85);
+    float treeBand = m2 * smoothstep(h2 - 0.012, h2 + 0.002, pm.y) * treeHere;
+    vec3 treeCol = mix(mix(vec3(0.30, 0.42, 0.27), haze, 0.25 * day), nightLand * 0.9, night * 0.9);
+    mid = mix(mid, treeCol, treeBand * 0.85);
+    col = mix(col, mid * rainDim, m2);
+  }
   land = max(land, m2);
 
   // a third, closer band
   vec2 pt = brush(p, vec2(1.0, -0.1), 40.0, 0.006, seed + 29.0);
   float h3 = 0.335 + 0.065 * ridge(pt.x * 2.0 + 7.0, seed + 6.0);
   float h3d = (ridge(pt.x * 2.0 + 7.01, seed + 6.0) - ridge(pt.x * 2.0 + 6.99, seed + 6.0)) * 60.0 * 0.065;
-  vec3 third = hill(pt, h3, h3d, vec3(0.68, 0.75, 0.40), vec3(0.46, 0.60, 0.30), lightX, seed + 6.0, 230.0);
-  third = mix(third, haze, 0.1 * day);
-  third = mix(third, nightLand, night * 0.85);
   float m3 = smoothstep(h3 + 0.004, h3 - 0.004, pt.y + (noise(pt * vec2(100.0, 10.0)) - 0.5) * 0.006);
-  col = mix(col, third * rainDim, m3);
+  if (m3 > 0.001) {
+    vec3 third = hill(pt, h3, h3d, vec3(0.68, 0.75, 0.40), vec3(0.46, 0.60, 0.30), lightX, seed + 6.0, 230.0, 0.34);
+    third = mix(third, haze, 0.1 * day);
+    third = mix(third, nightLand, night * 0.85);
+    col = mix(col, third * rainDim, m3);
+  }
   land = max(land, m3);
 
-  // near field, warm yellow-green
+  // near field, warm yellow-green, with the boldest strokes
   vec2 pn = brush(p, vec2(1.0, 0.0), 40.0, 0.006, seed + 37.0);
   float h4 = 0.305 + 0.045 * ridge(pn.x * 2.3 + 9.0, seed + 3.0);
   float h4d = (ridge(pn.x * 2.3 + 9.01, seed + 3.0) - ridge(pn.x * 2.3 + 8.99, seed + 3.0)) * 60.0 * 0.045;
-  vec3 field = hill(pn, h4, h4d, vec3(0.78, 0.80, 0.42), vec3(0.60, 0.70, 0.32), lightX, seed + 3.0, 290.0);
-  field = mix(field, nightLand * 1.2, night * 0.85);
   float m4 = smoothstep(h4 + 0.004, h4 - 0.004, pn.y + (noise(pn * vec2(120.0, 10.0)) - 0.5) * 0.006);
-  col = mix(col, field * rainDim, m4);
+  if (m4 > 0.001) {
+    vec3 field = hill(pn, h4, h4d, vec3(0.78, 0.80, 0.42), vec3(0.60, 0.70, 0.32), lightX, seed + 3.0, 290.0, 0.42);
+    field = mix(field, nightLand * 1.2, night * 0.85);
+    col = mix(col, field * rainDim, m4);
+  }
   land = max(land, m4);
 
   // ------------------------------------------------------------- grass ----
+  // The grass is drawn from the unsmeared position: the wet-paint drag that
+  // suits sky and hills would bend the blades into ripples.
+  p = vec2(vUv.x * aspect, yMap(vUv.y));
   float gTop = 0.285 + 0.025 * ridge(p.x * 3.0 + 2.0, seed + 4.0);
   float depth = clamp(p.y / max(gTop, 0.01), 0.0, 1.0); // 0 near .. 1 far
   float lift = depth;
-  // wind sways the blades; the pointer pushes them over
+  // wind sways the blades; a passing pointer brushes them over in the
+  // direction it moved. The lean is read once per column, at the middle of
+  // the grass band, so a whole blade tilts together (tips more than bases)
+  // instead of bending into an S where the trail crosses it, and it eases
+  // back as the paint dries.
   float sway = sin(uTime * 0.9 + p.x * 4.0 + seed) * 0.5 + sin(uTime * 1.7 + p.x * 9.0) * 0.25
              + rain * sin(uTime * 3.0 + p.x * 6.0) * 0.4;
-  float bend = sway * 0.03 * lift * lift + wetDir.x * wetPush * 0.09 * lift * lift;
+  vec4 flowG = texture2D(uFlow, vec2(vUv.x, yUnmap(0.15)));
+  vec2 velG = (flowG.rg - 0.5) * 2.0;
+  float pushG = flowG.b * smoothstep(0.0, 0.25, length(velG));
+  float bend = sway * 0.03 * lift * lift
+             - velG.x * pushG * 0.075 * (0.2 + 0.8 * lift);
   vec2 pgr = vec2(p.x + bend, p.y);
   // blade edge of the meadow against the field
   float edgeN = noise(vec2(pgr.x * 140.0, 3.0) + seed) * 0.5 + noise(vec2(pgr.x * 40.0, 1.0) + seed) * 0.5;
   float inGrass = smoothstep(gTop + 0.012, gTop - 0.012, p.y + (edgeN - 0.5) * 0.045);
 
+  if (inGrass > 0.001) {
   // three depth layers of blades over a mid-green ground, far to near
   vec3 gWarm = vec3(0.80, 0.84, 0.40);
   vec3 gCool = vec3(0.48, 0.70, 0.42);
@@ -412,7 +518,13 @@ void main() {
   }
   float tuft = smoothstep(0.62, 0.8, fbm(vec2(pgr.x * 14.0, pgr.y * 10.0) + seed));
   grass = mix(grass, grass * 0.7, tuft * 0.6);
+  // under the pointer: by day the pressed grass falls into its own shadow; by
+  // night the pointer carries a little moonlight down between the blades, so
+  // the patch shows every blade in cool green where the rest is flat dark
+  vec3 moonlit = grass * vec3(0.72, 1.12, 0.92) + vec3(0.03, 0.09, 0.06);
+  grass = mix(grass, grass * vec3(0.36, 0.44, 0.38), wet * day);
   grass = mix(grass, vec3(0.06, 0.11, 0.07), night * 0.88);
+  grass = mix(grass, moonlit, wet * night * 0.95);
   grass *= rainDim;
   col = mix(col, grass, inGrass);
 
@@ -427,7 +539,9 @@ void main() {
   float fk = hash(fc + 2.0);
   vec3 fcol = fk < 0.25 ? vec3(0.98, 0.96, 0.9) : (fk < 0.5 ? vec3(0.78, 0.60, 0.92) : (fk < 0.72 ? vec3(0.96, 0.62, 0.70) : (fk < 0.9 ? vec3(0.98, 0.85, 0.35) : vec3(0.92, 0.45, 0.30))));
   fcol = mix(fcol, fcol * 0.3, night * 0.85);
+  fcol = mix(fcol, fcol * 3.0, wet * night * 0.8);
   col = mix(col, fcol, flower);
+  }
 
   // fireflies at night, drifting and blinking low over the meadow
   {
@@ -440,6 +554,19 @@ void main() {
     float fly = step(0.9, ch) * exp(-dot(cf, cf) * 110.0) * blink;
     float low = smoothstep(0.42, 0.25, p.y) * smoothstep(0.02, 0.1, p.y);
     col += vec3(0.85, 1.0, 0.45) * fly * low * night * (1.0 - rain) * 1.2;
+  }
+
+  // seeds on the air by day: slow bright motes drifting over the field
+  {
+    vec2 cell = (p + vec2(uTime * 0.010, uTime * 0.004)) * vec2(16.0, 20.0);
+    vec2 cid = floor(cell);
+    float ch = hash(cid + seed * 4.3);
+    vec2 cf = fract(cell) - 0.5
+            + 0.15 * vec2(sin(uTime * 0.5 + ch * 20.0), cos(uTime * 0.4 + ch * 30.0));
+    float glow = 0.5 + 0.5 * sin(uTime * 0.8 + ch * 40.0);
+    float mote = step(0.93, ch) * exp(-dot(cf, cf) * 260.0) * glow;
+    float lowSky = smoothstep(0.62, 0.40, p.y) * smoothstep(0.08, 0.22, p.y);
+    col += vec3(1.0, 0.98, 0.90) * mote * lowSky * day * (1.0 - rain) * 0.35;
   }
 
   // -------------------------------------------------- dusk + night light ----
@@ -463,14 +590,15 @@ void main() {
 
   // --------------------------------------------------------- canvas grain ----
   float grain = noise(p * vec2(220.0, 900.0)) * 0.6 + noise(p * vec2(900.0, 220.0)) * 0.4;
-  col *= 0.94 + 0.1 * grain;
+  col *= 0.93 + 0.12 * grain;
   float speck = hash(floor(gl_FragCoord.xy / 2.0));
   col += (speck - 0.5) * 0.03;
 
-  // fresh paint: pushed strokes look thicker and catch the light
+  // fresh paint: pushed strokes look thicker and catch the light, and stay
+  // that way while the spot is wet. Over the grass the press reads on its own.
   float wetDab = dabsWet(p, wetDir, seed);
-  col *= 1.0 + (wetDab - 0.5) * wet * 0.6;
-  col = mix(col, col * 1.12 + 0.06, wet * 0.9);
+  col *= 1.0 + (wetDab - 0.5) * wet * 0.3;
+  col = mix(col, col * 1.06 + 0.03, wet * 0.35 * (1.0 - inGrass) * (1.0 - night * 0.5));
 
   // soft vignette
   float vig = smoothstep(1.6, 0.3, length((uv - 0.5) * vec2(1.2, 1.0)));

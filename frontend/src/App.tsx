@@ -46,7 +46,7 @@ function App() {
                   Budda AI
                 </A>
                 <Sep />an agentic ai design tool for figma w/ their native
-                tooling, got around 8 paying users and learned a lot about
+                tooling, got 735 users and paying customers, and learned a lot about
                 designer workflows.
               </span>
             </li>
@@ -55,8 +55,7 @@ function App() {
               <span className="hl">
                 <A href="https://sumanyai.com">Sumany AI</A>
                 <Sep />lets you summarize documents using open weight
-                transformer models (before chatgpt in '22), my first project
-                that i got paying users for.
+                transformer models (before chatgpt in '22).
               </span>
             </li>
             <li>

@@ -29,7 +29,7 @@ function App() {
 
           <p>
             <span className="hl">
-              i am a full stack software engineer who loves tinkering and
+              i am a full stack developer who loves tinkering and
               building new things :)
             </span>
           </p>

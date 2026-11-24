@@ -22,7 +22,7 @@ function App() {
         <div className="max-w-[760px] w-full space-y-8 text-[24px] leading-relaxed">
           <h1>
             <span className="hl">
-              hey! i'm zeke. i'm {age}, based in seattle, and a founding
+              hey! i'm zeke. i'm {age}, based in seattle, and a software
               engineer at <A href="https://mediscan.ai">MediScan AI</A>.
             </span>
           </h1>
@@ -46,7 +46,7 @@ function App() {
                   Budda AI
                 </A>
                 <Sep />an agentic ai design tool for figma w/ their native
-                tooling, got 735 users and paying customers, and learned a lot about
+                tooling, got some paying customers, and learned a lot about
                 designer workflows.
               </span>
             </li>
